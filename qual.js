@@ -38,7 +38,7 @@ function submitProbeInfo(probeID, token, probeInfo) {
 }
 
 glob('**/*.js', {
-    cwd: "../Leaflet",
+    cwd: program.path,
     ignore: ["**/dist/**", "**/node_modules/**", "**/build/**", "**/spec/**", "**/docs/**", "**/doc/**", "**/debug/**", "**/tmp/**", "**/test/**"]
 }, function(err, res) {
   if (err) throw err;
@@ -49,7 +49,7 @@ glob('**/*.js', {
 
   var quality = res.forEach(function(filename) {
     try {
-      var source = fs.readFileSync(filename, 'utf8');
+      var source = fs.readFileSync(program.path + '/' + filename, 'utf8');
       var v = escomplex.analyzeModule(source, { newmi: true });
 
       currentAmount += 1;
@@ -67,15 +67,15 @@ glob('**/*.js', {
     var coverageLoc = 0;
 
     try {
-      var reportJSON = JSON.parse(fs.readFileSync(program.path + '/coverage/coverage-summary.json', 'utf8'));
+      var reportJSON = JSON.parse(fs.readFileSync(process.cwd() + '/coverage/coverage-summary.json', 'utf8'));
       coverageLoc = loc * reportJSON['total']['lines']['pct'] / 100.0;
     } catch (err) {
       // Do nothing
     }
 
-    revision = childProcess.execSync('cd ' + program.path + ' && git rev-parse HEAD')
+    revision = childProcess.execSync('git rev-parse HEAD')
                  .toString().trim()
-    commitDate = childProcess.execSync('cd ' + program.path + ' && git log -1 --format=%cd').toString().trim()
+    commitDate = childProcess.execSync('git log -1 --format=%cd').toString().trim()
 
     const probeInfo = {
       maintainability: maintainability,
