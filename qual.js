@@ -37,7 +37,10 @@ function submitProbeInfo(probeID, token, probeInfo) {
   });
 }
 
-glob(program.path + '/{,!(build|node_modules|debug|test|spec|doc|docs)/**/}*.js', function(err, res) {
+glob('**/*.js', {
+    cwd: "../Leaflet",
+    ignore: ["**/dist/**", "**/node_modules/**", "**/build/**", "**/spec/**", "**/docs/**", "**/doc/**", "**/debug/**", "**/tmp/**", "**/test/**"]
+}, function(err, res) {
   if (err) throw err;
 
   var currentAmount = 0;
