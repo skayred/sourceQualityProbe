@@ -1,0 +1,1 @@
+for commit in $(git rev-list master | head -n 100 | tail -r); do     git checkout -f $commit; node ../qual/qual.js -p . -d; done > ../tmp/circus.json

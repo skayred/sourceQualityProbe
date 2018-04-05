@@ -1,4 +1,6 @@
 const escomplex = require('typhonjs-escomplex');
+const escomplexCoffee = require('escomplex-coffee');
+
 const fs = require('fs');
 const fileSystem = fs;
 const glob = require('glob');
@@ -14,9 +16,10 @@ program
   .option('-H, --host [host]', 'API host')
   .option('-P, --port [port]', 'API port')
   .option('-T, --token [token]', 'API token')
+  .option('-N, --probe [probe]', 'Probe ID')
   .parse(process.argv);
 
-function submitProbeInfo(probeID, token, probeInfo) {
+function submitProbeInfo(token, probeInfo, done) {
   var options = {
     url: 'http://' + program.host + ':' + program.port + '/api/probe_infos',
     method: "POST",
@@ -25,19 +28,19 @@ function submitProbeInfo(probeID, token, probeInfo) {
       'Authorization': 'Token token=' + token
     },
     body: qs.stringify({
-      probe_id: probeID,
+      probe_id: program.probe,
       value: 0,
       params: probeInfo,
       quality_characteristics: [ 'performance' ]
     }, { arrayFormat: 'brackets' })
   };
 
-  request.post(options, function(error, response, body) {
-    // Do nothing
+  request(options, function(error, response, body) {
+    done();
   });
 }
 
-glob('**/*.js', {
+glob('**/*.{js,jsx,ts,tsx,coffee}', {
     cwd: program.path,
     ignore: ["**/dist/**", "**/node_modules/**", "**/build/**", "**/spec/**", "**/docs/**", "**/doc/**", "**/debug/**", "**/tmp/**", "**/test/**"]
 }, function(err, res) {
@@ -45,16 +48,19 @@ glob('**/*.js', {
 
   var currentAmount = 0;
   var maintainability = 0;
+  var modules = [];
   var loc = 0;
 
   var quality = res.forEach(function(filename) {
     try {
       var source = fs.readFileSync(program.path + '/' + filename, 'utf8');
-      var v = escomplex.analyzeModule(source, { newmi: true });
+      var v = filename.endsWith('coffee') ? escomplexCoffee.analyse(source, { newmi: true }) : escomplex.analyzeModule(source, { newmi: true });
 
       currentAmount += 1;
       maintainability = maintainability + (v['maintainability'] - maintainability)/(currentAmount + 1.0);
-      loc += v['lineEnd']
+      loc += v['lineEnd'];
+
+      modules.push({ name: filename, maintainability: v['maintainability'] });
     } catch (err) {
       return null;
     }
@@ -63,7 +69,7 @@ glob('**/*.js', {
   process.argv = ['', '', '--reporter=json-summary', 'npm', 'run', 'test'];
   process.chdir(program.path);
   const nyc = require('./nyc.js');
-  nyc.onFinished = function() {
+  nyc.onFinished = function(done) {
     var coverageLoc = 0;
 
     try {
@@ -82,13 +88,15 @@ glob('**/*.js', {
       loc: loc,
       coverage: coverageLoc,
       revision: revision,
-      datetime: new Date(commitDate)
+      datetime: new Date(commitDate),
+      modules: modules
     };
 
     if (program.dry) {
-      console.log(probeInfo);
+      console.log(JSON.stringify(probeInfo));
+      done();
     } else {
-      submitProbeInfo(2, program.token, probeInfo);
+      submitProbeInfo(program.token, probeInfo, done);
     }
   };
 });

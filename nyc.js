@@ -69,12 +69,10 @@ if (argv._[0] === 'report') {
       checkCoverage(argv)
       process.exitCode = process.exitCode || mainChildExitCode
       if (!argv.silent) report(argv)
-      module.export.onFinished();
-      return done()
+      module.export.onFinished(done);
     } else {
       if (!argv.silent) report(argv)
-      module.exports.onFinished();
-      return done()
+      module.exports.onFinished(done);
     }
   })
 } else {
