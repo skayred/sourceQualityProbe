@@ -13,6 +13,7 @@ program
   .version('0.0.0')
   .option('-p, --path [path]', 'Project path')
   .option('-d, --dry', 'Dry run, data does not go anywhere')
+  .option('-m, --min', 'Minimal mode, excludes all project info')
   .option('-H, --host [host]', 'API host')
   .option('-P, --port [port]', 'API port')
   .option('-T, --token [token]', 'API token')
@@ -85,11 +86,11 @@ glob('**/*.{js,jsx,ts,tsx,coffee}', {
 
     const probeInfo = {
       maintainability: maintainability,
-      loc: loc,
-      coverage: coverageLoc,
+      loc: program.min ? 0 : loc,
+      coverage: program.min ? [] : coverageLoc,
       revision: revision,
       datetime: new Date(commitDate),
-      modules: modules
+      modules: program.min ? [] : modules
     };
 
     if (program.dry) {
